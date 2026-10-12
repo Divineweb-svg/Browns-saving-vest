@@ -113,7 +113,7 @@ if (loginForm) {
     await loadGoal();
     await loadSavings();
     await loadFamilyMembers();
-    await loadSavingsMembers();t
+    await loadSavingsMembers();
     await loadPendingDeposits();   // ← ADD THIS
     await loadBankDetails();       // ← ADD THIS
     return;
