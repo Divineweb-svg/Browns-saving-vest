@@ -6,7 +6,6 @@
 // ==========================================
 // ELEMENTS
 // ==========================================
-// New elements for pending system
 const continueSavingsButton = document.getElementById("continueSavingsButton");
 const confirmTransferButton = document.getElementById("confirmTransferButton");
 const backToStep1Button = document.getElementById("backToStep1Button");
@@ -37,15 +36,20 @@ const progressBar = document.getElementById("progressBar");
 const progressText = document.getElementById("progressText");
 const logoutButton = document.getElementById("logoutButton");
 
+const changeGoalButton = document.getElementById("changeGoalButton");
+const savingsGoalDisplay = document.getElementById("savingsGoalDisplay");
+
+// Hide Change Goal button by default (only Admin will see it)
+if (changeGoalButton) {
+    changeGoalButton.style.display = "none";
+}
+
 // ==========================================
 // SAVINGS GOAL
 // ==========================================
 
 let savingsGoal = 500000;
 let loggedInUser = "";
-
-const changeGoalButton = document.getElementById("changeGoalButton");
-const savingsGoalDisplay = document.getElementById("savingsGoalDisplay");
 
 
 // ==========================================
@@ -106,18 +110,23 @@ if (loginForm) {
             // ADMIN LOGIN
             // =================================
             if (data.member.role === "admin") {
-    loginSection.style.display = "none";
-    if (dashboardSection) dashboardSection.style.display = "none";
-    if (adminDashboard) adminDashboard.style.display = "block";
+                loginSection.style.display = "none";
+                if (dashboardSection) dashboardSection.style.display = "none";
+                if (adminDashboard) adminDashboard.style.display = "block";
 
-    await loadGoal();
-    await loadSavings();
-    await loadFamilyMembers();
-    await loadSavingsMembers();
-    await loadPendingDeposits();   // ← ADD THIS
-    await loadBankDetails();       // ← ADD THIS
-    return;
-}
+                // Admin can change the goal
+                if (changeGoalButton) {
+                    changeGoalButton.style.display = "inline-block";
+                }
+
+                await loadGoal();
+                await loadSavings();
+                await loadFamilyMembers();
+                await loadSavingsMembers();
+                await loadPendingDeposits();
+                await loadBankDetails();
+                return;
+            }
 
             // =================================
             // FAMILY MEMBER LOGIN
@@ -125,6 +134,11 @@ if (loginForm) {
             loginSection.style.display = "none";
             if (adminDashboard) adminDashboard.style.display = "none";
             if (dashboardSection) dashboardSection.style.display = "block";
+
+            // Normal members cannot change the goal
+            if (changeGoalButton) {
+                changeGoalButton.style.display = "none";
+            }
 
             await loadGoal();
             await loadSavings();
@@ -258,7 +272,7 @@ if (cancelSavingsButton) {
 
 
 // ==========================================
-// SAVE DEPOSIT
+// SAVE DEPOSIT (old direct method - kept for safety)
 // ==========================================
 
 if (saveMoneyButton) {
@@ -324,7 +338,7 @@ if (saveMoneyButton) {
 
 
 // ==========================================
-// LOAD SAVINGS (FIXED & COMPLETE)
+// LOAD SAVINGS
 // ==========================================
 
 async function loadSavings() {
@@ -340,12 +354,10 @@ async function loadSavings() {
         let totalSavings = 0;
         let mySavings = 0;
 
-        // Clear old transactions
         if (transactionList) {
             transactionList.innerHTML = "";
         }
 
-        // Group savings by member name (dynamic)
         const memberTotals = {};
 
         transactions.forEach(function (transaction) {
@@ -364,7 +376,6 @@ async function loadSavings() {
                 mySavings += amount;
             }
 
-            // Show transaction
             if (transactionList) {
                 const transactionElement = document.createElement("div");
                 transactionElement.classList.add("transaction");
@@ -385,19 +396,16 @@ async function loadSavings() {
             }
         });
 
-        // Total Savings
         if (totalSavingsDisplay) {
             totalSavingsDisplay.textContent =
                 "₦" + totalSavings.toLocaleString("en-NG", { minimumFractionDigits: 2 });
         }
 
-        // My Savings
         if (mySavingsDisplay) {
             mySavingsDisplay.textContent =
                 "₦" + mySavings.toLocaleString("en-NG", { minimumFractionDigits: 2 });
         }
 
-        // Update individual member cards if they exist (dad/mum/brown etc.)
         Object.keys(memberTotals).forEach(key => {
             const el = document.getElementById(key + "Savings");
             if (el) {
@@ -408,7 +416,6 @@ async function loadSavings() {
             }
         });
 
-        // Goal section
         const remaining = Math.max(savingsGoal - totalSavings, 0);
 
         const goalSaved = document.getElementById("goalSaved");
@@ -433,7 +440,6 @@ async function loadSavings() {
             }
         }
 
-        // Progress bar
         let progress = (totalSavings / savingsGoal) * 100;
         if (progress > 100) progress = 100;
         if (progress < 0) progress = 0;
@@ -446,13 +452,11 @@ async function loadSavings() {
             goalPercentage.textContent = Math.round(progress) + "% of goal";
         }
 
-        // Savings Report
         const reportDepositCount = document.getElementById("reportDepositCount");
         if (reportDepositCount) {
             reportDepositCount.textContent = transactions.length;
         }
 
-        // Dynamic report for any members
         Object.keys(memberTotals).forEach(key => {
             const reportEl = document.getElementById("report" + key.charAt(0).toUpperCase() + key.slice(1) + "Savings");
             if (reportEl) {
@@ -478,7 +482,6 @@ async function loadSavingsMembers() {
     const select = document.getElementById("memberName");
     if (!select) return;
 
-    // Remember what the user currently selected
     const currentlySelected = select.value;
 
     try {
@@ -488,7 +491,6 @@ async function loadSavingsMembers() {
         const members = await response.json();
         const familyMembers = members.filter(m => m.role === "member");
 
-        // Rebuild the options
         select.innerHTML = `<option value="">Select family member</option>`;
 
         familyMembers.forEach(member => {
@@ -498,7 +500,6 @@ async function loadSavingsMembers() {
             select.appendChild(option);
         });
 
-        // Put back the selection the user made
         if (currentlySelected) {
             select.value = currentlySelected;
         }
@@ -507,6 +508,7 @@ async function loadSavingsMembers() {
         console.error("Error loading savings members:", error);
     }
 }
+
 
 // ==========================================
 // DELETE TRANSACTION
@@ -636,7 +638,6 @@ async function loadFamilyMembers() {
             adminMemberCount.textContent = familyMembers.length;
         }
 
-        // Remove buttons
         document.querySelectorAll(".remove-member-button").forEach(button => {
             button.addEventListener("click", async () => {
                 const id = button.dataset.id;
@@ -879,7 +880,6 @@ async function loadDashboardFamilyMembers() {
 // AUTOMATIC SYNC
 // ==========================================
 
-// Auto-refresh for member dashboard
 setInterval(() => {
     const dashboard = document.getElementById("dashboardSection");
     if (dashboard && dashboard.style.display !== "none") {
@@ -887,18 +887,17 @@ setInterval(() => {
     }
 }, 3000);
 
-// Auto-refresh savings members dropdown
 setInterval(() => {
     loadSavingsMembers();
 }, 5000);
 
-// NEW: Auto-refresh pending deposits for Admin (every 5 seconds)
 setInterval(() => {
     const adminDash = document.getElementById("adminDashboard");
     if (adminDash && adminDash.style.display !== "none") {
         loadPendingDeposits();
     }
 }, 5000);
+
 
 // ==========================================
 // LOAD BANK DETAILS
@@ -909,7 +908,6 @@ async function loadBankDetails() {
         const response = await fetch("/api/bank-details");
         const bank = await response.json();
 
-        // For the transfer step
         const displayBankName = document.getElementById("displayBankName");
         const displayAccountName = document.getElementById("displayAccountName");
         const displayAccountNumber = document.getElementById("displayAccountNumber");
@@ -918,7 +916,6 @@ async function loadBankDetails() {
         if (displayAccountName) displayAccountName.textContent = bank.account_name || "Not set";
         if (displayAccountNumber) displayAccountNumber.textContent = bank.account_number || "Not set";
 
-        // For admin edit form
         const adminBankName = document.getElementById("adminBankName");
         const adminAccountName = document.getElementById("adminAccountName");
         const adminAccountNumber = document.getElementById("adminAccountNumber");
@@ -956,7 +953,6 @@ if (continueSavingsButton) {
             return;
         }
 
-        // Show bank details
         await loadBankDetails();
         savingsStep1.style.display = "none";
         savingsStep2.style.display = "block";
@@ -1008,7 +1004,6 @@ if (confirmTransferButton) {
 
             alert("Transfer submitted! Waiting for admin confirmation.");
 
-            // Reset form
             savingsForm.style.display = "none";
             savingsStep1.style.display = "block";
             savingsStep2.style.display = "none";
@@ -1063,7 +1058,6 @@ async function loadPendingDeposits() {
             pendingList.appendChild(div);
         });
 
-        // Confirm buttons
         document.querySelectorAll(".btn-confirm").forEach(btn => {
             btn.addEventListener("click", async () => {
                 const id = btn.dataset.id;
@@ -1091,7 +1085,6 @@ async function loadPendingDeposits() {
             });
         });
 
-        // Reject buttons
         document.querySelectorAll(".btn-reject").forEach(btn => {
             btn.addEventListener("click", async () => {
                 const id = btn.dataset.id;
