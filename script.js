@@ -879,6 +879,7 @@ async function loadDashboardFamilyMembers() {
 // AUTOMATIC SYNC
 // ==========================================
 
+// Auto-refresh for member dashboard
 setInterval(() => {
     const dashboard = document.getElementById("dashboardSection");
     if (dashboard && dashboard.style.display !== "none") {
@@ -886,8 +887,17 @@ setInterval(() => {
     }
 }, 3000);
 
+// Auto-refresh savings members dropdown
 setInterval(() => {
     loadSavingsMembers();
+}, 5000);
+
+// NEW: Auto-refresh pending deposits for Admin (every 5 seconds)
+setInterval(() => {
+    const adminDash = document.getElementById("adminDashboard");
+    if (adminDash && adminDash.style.display !== "none") {
+        loadPendingDeposits();
+    }
 }, 5000);
 
 // ==========================================
