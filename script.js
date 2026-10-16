@@ -45,6 +45,65 @@ if (changeGoalButton) {
 }
 
 // ==========================================
+// ADMIN CHANGE GOAL BUTTON
+// ==========================================
+
+const adminChangeGoalButton = document.getElementById("adminChangeGoalButton");
+
+if (adminChangeGoalButton) {
+    adminChangeGoalButton.addEventListener("click", async function () {
+        const newGoal = prompt("Enter the new savings goal:");
+
+        if (newGoal === null) return;
+
+        const goal = Number(newGoal);
+
+        if (!goal || goal <= 0) {
+            alert("Please enter a valid goal amount.");
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/goal", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ goal: goal })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert(data.error || "Could not update goal.");
+                return;
+            }
+
+            savingsGoal = Number(data.goal);
+
+            // Update displays
+            if (savingsGoalDisplay) {
+                savingsGoalDisplay.textContent =
+                    "₦" + savingsGoal.toLocaleString("en-NG", { minimumFractionDigits: 0 });
+            }
+
+            const adminSavingsGoal = document.getElementById("adminSavingsGoal");
+            if (adminSavingsGoal) {
+                adminSavingsGoal.textContent =
+                    "₦" + savingsGoal.toLocaleString("en-NG", { minimumFractionDigits: 0 });
+            }
+
+            await loadSavings();
+            await updateAdminDashboard();
+            alert("Savings goal updated successfully! ✅");
+
+        } catch (error) {
+            console.error("Error updating goal:", error);
+            alert("Could not connect to the server.");
+        }
+    });
+}
+// ==========================================
 // SAVINGS GOAL
 // ==========================================
 
